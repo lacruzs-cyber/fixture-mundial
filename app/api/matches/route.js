@@ -1,4 +1,4 @@
-import { getMatchesByDate } from "../../../lib/apiFootball";
+import { getMatchesByDate } from "../../../lib/theSportsDb";
 
 export const dynamic = "force-dynamic";
 

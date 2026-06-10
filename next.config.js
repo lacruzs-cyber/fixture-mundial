@@ -1,9 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Permite logos de equipos servidos desde el CDN de API-Sports
+  // Permite logos de equipos servidos desde el CDN de TheSportsDB
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "media.api-sports.io" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "www.thesportsdb.com" },
+      { protocol: "https", hostname: "r2.thesportsdb.com" },
+    ],
   },
 };
 

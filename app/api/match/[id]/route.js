@@ -1,4 +1,4 @@
-import { getMatchDetail } from "../../../../lib/apiFootball";
+import { getMatchDetail } from "../../../../lib/theSportsDb";
 
 export const dynamic = "force-dynamic";
 
