@@ -6,17 +6,34 @@ import Link from "next/link";
 const TZ = "America/Argentina/Buenos_Aires";
 const PAGE_SIZE = 10;
 
-// "jue. 11 jun, 16:00"
-function dateTimeLabel(iso) {
+// Fecha del partido en hora ARG, usada para agrupar por dia (YYYY-MM-DD).
+function dayKey(iso) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
+}
+
+// "jueves 11 de junio"
+function dayLabel(iso) {
   const txt = new Intl.DateTimeFormat("es-AR", {
-    weekday: "short",
+    weekday: "long",
     day: "numeric",
-    month: "short",
+    month: "long",
+    timeZone: TZ,
+  }).format(new Date(iso));
+  return txt.charAt(0).toUpperCase() + txt.slice(1);
+}
+
+// "16:00"
+function timeLabel(iso) {
+  return new Intl.DateTimeFormat("es-AR", {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: TZ,
   }).format(new Date(iso));
-  return txt.replace(",", "");
 }
 
 function isArgentina(name) {
@@ -82,7 +99,17 @@ export default function Home() {
         <div className="empty">No hay partidos para mostrar.</div>
       )}
 
-      {!loading && !error && visible.map((m) => <MatchCard key={m.id} m={m} />)}
+      {!loading && !error && visible.map((m, i) => {
+        const key = m.kickoff ? dayKey(m.kickoff) : null;
+        const prevKey = i > 0 && visible[i - 1].kickoff ? dayKey(visible[i - 1].kickoff) : null;
+        const showSeparator = key && key !== prevKey;
+        return (
+          <div key={m.id}>
+            {showSeparator && <div className="day-sep">{dayLabel(m.kickoff)}</div>}
+            <MatchCard m={m} />
+          </div>
+        );
+      })}
 
       {hasMore && (
         <div ref={sentinelRef} className="spinner">Cargando más…</div>
@@ -98,7 +125,7 @@ function MatchCard({ m }) {
   return (
     <Link href={`/partido/${m.id}`} className={`match${arg ? " arg" : ""}`}>
       <div className="match-top">
-        <span className="match-date">{m.kickoff ? dateTimeLabel(m.kickoff) : ""}</span>
+        <span className="match-date">{m.kickoff ? timeLabel(m.kickoff) : ""}</span>
         {m.live ? (
           <span className="badge live">EN VIVO {m.elapsed ? `${m.elapsed}'` : ""}</span>
         ) : m.finished ? (

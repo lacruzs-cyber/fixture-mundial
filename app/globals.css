@@ -33,6 +33,18 @@ a { color: inherit; text-decoration: none; }
 .header h1 { font-size: 20px; letter-spacing: 0.3px; }
 .header .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
 
+/* Separador de dia */
+.day-sep {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: var(--accent);
+  margin: 22px 4px 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.day-sep:first-of-type { margin-top: 6px; }
+
 /* Lista */
 .match {
   display: block;
