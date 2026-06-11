@@ -33,18 +33,35 @@ export default function MatchDetail() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+    let interval;
+
+    async function load(showSpinner) {
+      if (showSpinner) setLoading(true);
       try {
         const res = await fetch(`/api/match/${id}`);
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Error al cargar");
+        if (cancelled) return;
         setData(json);
+        setError(null);
+        // Mientras el partido no termine, refrescamos para que el
+        // resultado y los goles se actualicen en vivo.
+        if (!json.fixture?.finished && !interval) {
+          interval = setInterval(() => load(false), 20000);
+        }
       } catch (e) {
-        setError(e.message);
+        if (!cancelled) setError(e.message);
       } finally {
-        setLoading(false);
+        if (showSpinner && !cancelled) setLoading(false);
       }
-    })();
+    }
+
+    load(true);
+    return () => {
+      cancelled = true;
+      if (interval) clearInterval(interval);
+    };
   }, [id]);
 
   return (

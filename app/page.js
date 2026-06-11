@@ -48,21 +48,33 @@ export default function Home() {
   const sentinelRef = useRef(null);
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
+    let cancelled = false;
+
+    async function load(showSpinner) {
+      if (showSpinner) setLoading(true);
       setError(null);
       try {
         const res = await fetch("/api/matches");
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Error al cargar");
-        setMatches(json.matches || []);
+        if (!cancelled) setMatches(json.matches || []);
       } catch (e) {
-        setError(e.message);
-        setMatches([]);
+        if (!cancelled) {
+          setError(e.message);
+          setMatches([]);
+        }
       } finally {
-        setLoading(false);
+        if (showSpinner && !cancelled) setLoading(false);
       }
-    })();
+    }
+
+    load(true);
+    // Refresca en segundo plano para que resultados/goles en vivo se actualicen.
+    const interval = setInterval(() => load(false), 20000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   const hasMore = visibleCount < matches.length;
