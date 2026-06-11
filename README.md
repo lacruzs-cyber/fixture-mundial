@@ -2,21 +2,18 @@
 
 Sitio web (mobile-first) que muestra todos los partidos del Mundial FIFA 2026 en una sola lista, con scroll infinito (carga de a 10), banderas de los equipos, **horarios y canales de TV en Argentina**, resultados de partidos jugados y **goleadores** al tocar un partido. El próximo partido por jugarse aparece primero. Los partidos de **Argentina** aparecen destacados.
 
-Stack: **Next.js 14** (App Router) + datos de **TheSportsDB** (thesportsdb.com), una API pública y gratuita que no requiere registro. Sin base de datos: las rutas `/api` pegan en vivo a la API con un cache en memoria.
+Stack: **Next.js 14** (App Router) + datos de **football-data.org**, una API pública con registro gratuito. Sin base de datos: las rutas `/api` pegan en vivo a la API con un cache en memoria.
 
 ## Variables de entorno
 
-Todas son opcionales, la app funciona "out of the box":
-
 | Variable | Descripción | Default |
 |---|---|---|
-| `THESPORTSDB_API_KEY` | Key de thesportsdb.com (la "3" es la key de test pública gratuita) | `3` |
-| `THESPORTSDB_LEAGUE_ID` | ID de la liga (Copa del Mundo FIFA = 4429) | `4429` |
-| `THESPORTSDB_SEASON` | Temporada | `2026` |
+| `FOOTBALL_DATA_TOKEN` | Token gratuito de [football-data.org](https://www.football-data.org/client/register) (registro sin costo, te llega por mail) | **requerida** |
+| `FOOTBALL_DATA_COMPETITION` | Código de la competencia (Mundial FIFA = `WC`) | `WC` |
 
-Local: copiá `.env.example` a `.env.local` si querés personalizar algo.
+Local: copiá `.env.example` a `.env.local` y poné tu token.
 
-> Nota: con la key gratuita de TheSportsDB, el detalle de **goleadores** depende de los datos que la API tenga cargados para cada partido; si no hay información disponible se muestra "Sin goles" o "Todavía no hay goles".
+> Nota: el detalle de **goleadores** depende de los datos que football-data.org tenga cargados para cada partido; si no hay información disponible se muestra "Sin goles" o "Todavía no hay goles".
 >
 > Los **canales de TV** mostrados (Telefe, TV Pública, DirecTV Sports) son una referencia basada en los acuerdos habituales de transmisión del Mundial en Argentina, no provienen de una API (no existe una pública con esa info).
 
@@ -38,9 +35,10 @@ npm start
 
 1. Subí el repo a GitHub (ver abajo).
 2. En Railway: New Project → Deploy from GitHub repo → elegí `fixture-mundial`.
-3. Railway detecta Next.js solo (Nixpacks): corre `npm install`, `npm run build` y `npm start`.
+3. En el servicio → **Variables** → agregá `FOOTBALL_DATA_TOKEN` con tu token.
+4. Railway detecta Next.js solo (Nixpacks): corre `npm install`, `npm run build` y `npm start`.
    El script `start` se bindea al `PORT` que asigna Railway.
-4. En **Settings → Networking** → Generate Domain para tener la URL pública.
+5. En **Settings → Networking** → Generate Domain para tener la URL pública.
 
 ## Estructura
 
@@ -51,12 +49,12 @@ app/
   api/matches/route.js    proxy: todos los partidos del Mundial
   api/match/[id]/route.js proxy: detalle + goles
   globals.css             estilos (modo oscuro)
-lib/theSportsDb.js        cliente TheSportsDB + cache + hora ARG
+lib/footballData.js       cliente football-data.org + cache + hora ARG
 lib/teamMeta.js            banderas (flagcdn.com) + canales de TV
 ```
 
 ## Notas
 
-- TheSportsDB es gratuita y pública; el cache en memoria reduce las consultas (días pasados 6 h, día actual 60 s) y los escudos de equipos se cachean para siempre.
+- football-data.org tiene un límite de 10 requests/minuto en el plan free; el cache en memoria (60s) evita pasarse.
 - Los horarios de la API vienen en UTC; el front los muestra en `America/Argentina/Buenos_Aires`.
 - `next@14.2.35` (versión parcheada por seguridad).

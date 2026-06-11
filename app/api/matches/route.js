@@ -1,4 +1,4 @@
-import { getAllMatches } from "../../../lib/theSportsDb";
+import { getAllMatches } from "../../../lib/footballData";
 
 export const dynamic = "force-dynamic";
 
