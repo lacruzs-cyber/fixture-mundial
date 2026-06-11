@@ -46,6 +46,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const sentinelRef = useRef(null);
+  const nextMatchRef = useRef(null);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,6 +79,25 @@ export default function Home() {
     };
   }, []);
 
+  // Al cargar por primera vez, mostramos hasta el proximo partido + una
+  // pagina mas, y centramos el scroll en ese partido.
+  const [scrollPending, setScrollPending] = useState(false);
+
+  useEffect(() => {
+    if (initializedRef.current || matches.length === 0) return;
+    initializedRef.current = true;
+    const nextIndex = matches.findIndex((m) => !m.finished);
+    const idx = nextIndex === -1 ? matches.length - 1 : nextIndex;
+    setVisibleCount(Math.min(Math.max(idx + PAGE_SIZE, PAGE_SIZE), matches.length));
+    setScrollPending(true);
+  }, [matches]);
+
+  useEffect(() => {
+    if (!scrollPending) return;
+    nextMatchRef.current?.scrollIntoView({ block: "start" });
+    setScrollPending(false);
+  }, [scrollPending, visibleCount]);
+
   const hasMore = visibleCount < matches.length;
 
   const loadMore = useCallback(() => {
@@ -97,6 +118,7 @@ export default function Home() {
   }, [hasMore, loadMore]);
 
   const visible = matches.slice(0, visibleCount);
+  const nextIndex = matches.findIndex((m) => !m.finished);
 
   return (
     <div className="container">
@@ -115,8 +137,9 @@ export default function Home() {
         const key = m.kickoff ? dayKey(m.kickoff) : null;
         const prevKey = i > 0 && visible[i - 1].kickoff ? dayKey(visible[i - 1].kickoff) : null;
         const showSeparator = key && key !== prevKey;
+        const isNext = i === nextIndex;
         return (
-          <div key={m.id}>
+          <div key={m.id} ref={isNext ? nextMatchRef : null}>
             {showSeparator && <div className="day-sep">{dayLabel(m.kickoff)}</div>}
             <MatchCard m={m} />
           </div>
