@@ -1,6 +1,6 @@
 # Fixture Mundial 2026 ⚽
 
-Sitio web (mobile-first) que muestra los partidos del Mundial FIFA 2026 en **hora Argentina**, con navegación día por día, resultados de partidos jugados y **goleadores** al tocar un partido. Los partidos de **Argentina** aparecen destacados.
+Sitio web (mobile-first) que muestra todos los partidos del Mundial FIFA 2026 en una sola lista, con scroll infinito (carga de a 10), banderas de los equipos, **horarios y canales de TV en Argentina**, resultados de partidos jugados y **goleadores** al tocar un partido. El próximo partido por jugarse aparece primero. Los partidos de **Argentina** aparecen destacados.
 
 Stack: **Next.js 14** (App Router) + datos de **TheSportsDB** (thesportsdb.com), una API pública y gratuita que no requiere registro. Sin base de datos: las rutas `/api` pegan en vivo a la API con un cache en memoria.
 
@@ -17,6 +17,8 @@ Todas son opcionales, la app funciona "out of the box":
 Local: copiá `.env.example` a `.env.local` si querés personalizar algo.
 
 > Nota: con la key gratuita de TheSportsDB, el detalle de **goleadores** depende de los datos que la API tenga cargados para cada partido; si no hay información disponible se muestra "Sin goles" o "Todavía no hay goles".
+>
+> Los **canales de TV** mostrados (Telefe, TV Pública, DirecTV Sports) son una referencia basada en los acuerdos habituales de transmisión del Mundial en Argentina, no provienen de una API (no existe una pública con esa info).
 
 ## Correr local
 
@@ -44,12 +46,13 @@ npm start
 
 ```
 app/
-  page.js                 vista del día + navegación + lista
+  page.js                 lista infinita de partidos (banderas, hora, canales)
   partido/[id]/page.js    detalle del partido + goleadores
-  api/matches/route.js    proxy: partidos por fecha
+  api/matches/route.js    proxy: todos los partidos del Mundial
   api/match/[id]/route.js proxy: detalle + goles
   globals.css             estilos (modo oscuro)
-lib/theSportsDb.js         cliente TheSportsDB + cache + hora ARG
+lib/theSportsDb.js        cliente TheSportsDB + cache + hora ARG
+lib/teamMeta.js            banderas (flagcdn.com) + canales de TV
 ```
 
 ## Notas

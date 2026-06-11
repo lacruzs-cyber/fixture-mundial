@@ -59,7 +59,9 @@ export default function MatchDetail() {
           <div className="detail-head">
             <div className="vs-row">
               <div className="side">
-                {data.fixture.home.logo && <img src={data.fixture.home.logo} alt="" />}
+                {(data.fixture.home.flag || data.fixture.home.logo) && (
+                  <img src={data.fixture.home.flag || data.fixture.home.logo} alt="" />
+                )}
                 <div className="name">{data.fixture.home.name}</div>
               </div>
               <div className="result">
@@ -68,7 +70,9 @@ export default function MatchDetail() {
                   : "vs"}
               </div>
               <div className="side">
-                {data.fixture.away.logo && <img src={data.fixture.away.logo} alt="" />}
+                {(data.fixture.away.flag || data.fixture.away.logo) && (
+                  <img src={data.fixture.away.flag || data.fixture.away.logo} alt="" />
+                )}
                 <div className="name">{data.fixture.away.name}</div>
               </div>
             </div>
@@ -78,6 +82,12 @@ export default function MatchDetail() {
               {data.fixture.live
                 ? `EN VIVO ${data.fixture.elapsed ? data.fixture.elapsed + "'" : ""}`
                 : data.fixture.statusLong}
+              {data.fixture.channels?.length > 0 && (
+                <>
+                  <br />
+                  📺 {data.fixture.channels.join(" · ")}
+                </>
+              )}
             </div>
           </div>
 

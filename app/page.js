@@ -1,47 +1,22 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 
 const TZ = "America/Argentina/Buenos_Aires";
+const PAGE_SIZE = 10;
 
-// Fecha de hoy en hora Argentina como YYYY-MM-DD
-function todayARG() {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-}
-
-// Suma dias a un YYYY-MM-DD sin que se corra por zona horaria
-function addDays(iso, n) {
-  const [y, m, d] = iso.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  dt.setUTCDate(dt.getUTCDate() + n);
-  return dt.toISOString().slice(0, 10);
-}
-
-// Etiqueta linda: "jueves 11 de junio"
-function dateLabel(iso) {
-  const [y, m, d] = iso.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d, 12));
-  return new Intl.DateTimeFormat("es-AR", {
-    weekday: "long",
+// "jue. 11 jun, 16:00"
+function dateTimeLabel(iso) {
+  const txt = new Intl.DateTimeFormat("es-AR", {
+    weekday: "short",
     day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  }).format(dt);
-}
-
-// Hora del partido (HH:mm) a partir del ISO que ya viene en hora ARG
-function kickoffTime(iso) {
-  return new Intl.DateTimeFormat("es-AR", {
+    month: "short",
     hour: "2-digit",
     minute: "2-digit",
     timeZone: TZ,
   }).format(new Date(iso));
+  return txt.replace(",", "");
 }
 
 function isArgentina(name) {
@@ -49,62 +24,69 @@ function isArgentina(name) {
 }
 
 export default function Home() {
-  const [date, setDate] = useState(todayARG());
   const [matches, setMatches] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const load = useCallback(async (d) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/matches?date=${d}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Error al cargar");
-      setMatches(json.matches || []);
-    } catch (e) {
-      setError(e.message);
-      setMatches([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const sentinelRef = useRef(null);
 
   useEffect(() => {
-    load(date);
-  }, [date, load]);
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/matches");
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Error al cargar");
+        setMatches(json.matches || []);
+      } catch (e) {
+        setError(e.message);
+        setMatches([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  const today = todayARG();
+  const hasMore = visibleCount < matches.length;
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((c) => Math.min(c + PAGE_SIZE, matches.length));
+  }, [matches.length]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
+
+  const visible = matches.slice(0, visibleCount);
 
   return (
     <div className="container">
       <header className="header">
         <h1>⚽ Mundial 2026</h1>
-        <div className="sub">Horarios en hora Argentina</div>
+        <div className="sub">Horarios y canales en hora Argentina</div>
       </header>
-
-      <nav className="daynav">
-        <button onClick={() => setDate(addDays(date, -1))} aria-label="Dia anterior">‹</button>
-        <div className="date">
-          {dateLabel(date)}
-          {date !== today && (
-            <div>
-              <button className="today-btn" onClick={() => setDate(today)}>Ir a hoy</button>
-            </div>
-          )}
-        </div>
-        <button onClick={() => setDate(addDays(date, 1))} aria-label="Dia siguiente">›</button>
-      </nav>
 
       {loading && <div className="spinner">Cargando partidos…</div>}
       {error && <div className="empty">⚠️ {error}</div>}
-      {!loading && !error && matches.length === 0 && (
-        <div className="empty">No hay partidos este día.</div>
+      {!loading && !error && visible.length === 0 && (
+        <div className="empty">No hay partidos para mostrar.</div>
       )}
 
-      {!loading && !error && matches.map((m) => (
-        <MatchCard key={m.id} m={m} />
-      ))}
+      {!loading && !error && visible.map((m) => <MatchCard key={m.id} m={m} />)}
+
+      {hasMore && (
+        <div ref={sentinelRef} className="spinner">Cargando más…</div>
+      )}
     </div>
   );
 }
@@ -116,30 +98,40 @@ function MatchCard({ m }) {
   return (
     <Link href={`/partido/${m.id}`} className={`match${arg ? " arg" : ""}`}>
       <div className="match-top">
-        <span>{m.round || "Mundial"}</span>
+        <span className="match-date">{m.kickoff ? dateTimeLabel(m.kickoff) : ""}</span>
         {m.live ? (
           <span className="badge live">EN VIVO {m.elapsed ? `${m.elapsed}'` : ""}</span>
         ) : m.finished ? (
           <span className="badge done">Finalizado</span>
         ) : (
-          <span className="badge sched">{kickoffTime(m.kickoff)}</span>
+          <span className="badge sched">{m.round || "Mundial"}</span>
         )}
       </div>
 
-      <div className="teams">
-        <TeamRow t={m.home} showScore={showScore} />
-        <TeamRow t={m.away} showScore={showScore} />
+      <div className="teams-row">
+        <TeamCol t={m.home} align="right" />
+        <div className="score-col">
+          {showScore ? `${m.home.goals ?? 0} - ${m.away.goals ?? 0}` : "vs"}
+        </div>
+        <TeamCol t={m.away} align="left" />
+      </div>
+
+      <div className="match-bottom">
+        {m.round && <span className="round">{m.round}</span>}
+        {m.channels?.length > 0 && (
+          <span className="channels">📺 {m.channels.join(" · ")}</span>
+        )}
       </div>
     </Link>
   );
 }
 
-function TeamRow({ t, showScore }) {
+function TeamCol({ t, align }) {
+  const flag = t.flag || t.logo;
   return (
-    <div className={`team${t.winner ? " winner" : ""}`}>
-      {t.logo ? <img src={t.logo} alt="" /> : <span style={{ width: 26 }} />}
+    <div className={`team-col${t.winner ? " winner" : ""}`} style={{ textAlign: align }}>
+      {flag ? <img src={flag} alt="" /> : <span className="flag-placeholder" />}
       <span className="name">{t.name}</span>
-      {showScore && <span className="score">{t.goals ?? 0}</span>}
     </div>
   );
 }
